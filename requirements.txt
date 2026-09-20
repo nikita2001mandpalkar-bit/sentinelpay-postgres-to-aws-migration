@@ -1,0 +1,5 @@
+psycopg[binary]
+boto3
+python-dotenv
+great_expectations
+pandas<3.0.0

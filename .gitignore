@@ -1,0 +1,16 @@
+.venv/
+.airflow-venv/
+.airflow/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Local source extracts and pipeline state can be regenerated.
+data/output/
+data/state/
+data/published/
+
+# AWS credentials and local configuration must not enter version control.
+.env
+.env.*
+!.env.example
