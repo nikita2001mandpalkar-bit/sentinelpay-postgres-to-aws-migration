@@ -210,8 +210,10 @@ cloud writes. Run the same checks locally with:
 .venv/bin/python -m pytest -q
 ```
 
-Continuous deployment is intentionally not configured yet. Any future S3
-publication workflow must use approval gates and AWS OIDC federation rather
+The manual `SentinelPay Release Candidate` workflow is the project's continuous
+delivery step. It reruns the CI checks and creates a downloadable, versioned
+source artifact. It has no AWS credentials and cannot publish data. Any future
+S3 deployment workflow must use approval gates and AWS OIDC federation rather
 than long-lived AWS keys stored in GitHub.
 
 ## Security And Cost Controls
