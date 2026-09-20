@@ -17,6 +17,8 @@ flowchart TD
     quarantine[Quarantine outputs]
     gold[Gold PySpark<br/>Reconciliation, daily metrics, SCD Type 2]
     quality[Great Expectations and<br/>source-to-target reconciliation]
+    triage[Manual data-quality triage<br/>and source remediation]
+    release[Manual release and<br/>AWS validation steps]
     compact[Parquet compaction<br/>Partitioned publication]
     s3[Amazon S3<br/>sentinelpay-migration prefix]
     glue[Manual Glue Catalog registration<br/>Explicit schema and partitions]
@@ -27,7 +29,7 @@ flowchart TD
     source --> full --> bronze
     source --> incremental --> bronze
     bronze --> silver --> gold --> compact --> s3 --> glue --> athena
-    silver --> quarantine
+    silver --> quarantine --> triage
     silver --> quality
     gold --> quality
     quality --> compact
@@ -35,6 +37,10 @@ flowchart TD
     airflow -. orchestrates .-> full
     airflow -. orchestrates .-> silver
     airflow -. orchestrates .-> gold
+    release -. runs after successful pipeline .-> compact
+    release -. publishes .-> s3
+    release -. registers .-> glue
+    release -. validates .-> athena
 ```
 
 ## Completed Implementation
@@ -215,6 +221,16 @@ delivery step. It reruns the CI checks and creates a downloadable, versioned
 source artifact. It has no AWS credentials and cannot publish data. Any future
 S3 deployment workflow must use approval gates and AWS OIDC federation rather
 than long-lived AWS keys stored in GitHub.
+
+## Orchestration Boundary
+
+Airflow currently orchestrates the local full extraction, Bronze manifest
+validation, Silver transformation, Gold transformation, reconciliation, and
+CloudWatch metric publication. Parquet compaction, S3 publication, Glue table
+registration, partition repair, and Athena query validation are deliberate
+manual release steps in this project. They are not represented as Airflow tasks
+and should not be claimed as automatically orchestrated. Quarantined rows are
+retained for manual data-quality triage and source-system remediation.
 
 ## Security And Cost Controls
 
