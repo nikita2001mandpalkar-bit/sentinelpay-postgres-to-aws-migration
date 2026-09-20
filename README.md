@@ -7,25 +7,34 @@ Athena, and CloudWatch.
 
 ## Architecture
 
-```text
-Local PostgreSQL
-      |
-      v
-Bronze CSV + run ID, watermark, and extraction manifest
-      |
-      v
-PySpark Silver validation, deduplication, and quarantine
-      |
-      v
-PySpark Gold reconciliation, merchant metrics, and SCD2 history
-      |
-      +--> Great Expectations + source-to-target reconciliation
-      |
-      v
-Immutable Parquet publication --> Amazon S3 --> Manually registered Glue tables --> Athena
-                                                  |
-                                                  v
-                                      CloudWatch custom metrics and alarm
+```mermaid
+flowchart TD
+    source[Local PostgreSQL legacy warehouse]
+    full[Full extract]
+    incremental[Watermark incremental extract]
+    bronze[Bronze CSV<br/>Run ID, manifest, checksums]
+    silver[Silver PySpark<br/>Validate, deduplicate, quarantine]
+    quarantine[Quarantine outputs]
+    gold[Gold PySpark<br/>Reconciliation, daily metrics, SCD Type 2]
+    quality[Great Expectations and<br/>source-to-target reconciliation]
+    compact[Parquet compaction<br/>Partitioned publication]
+    s3[Amazon S3<br/>sentinelpay-migration prefix]
+    glue[Manual Glue Catalog registration<br/>Explicit schema and partitions]
+    athena[Athena partition-filtered queries]
+    cloudwatch[CloudWatch custom metrics<br/>and failure alarm]
+    airflow[Local Airflow orchestration]
+
+    source --> full --> bronze
+    source --> incremental --> bronze
+    bronze --> silver --> gold --> compact --> s3 --> glue --> athena
+    silver --> quarantine
+    silver --> quality
+    gold --> quality
+    quality --> compact
+    gold --> cloudwatch
+    airflow -. orchestrates .-> full
+    airflow -. orchestrates .-> silver
+    airflow -. orchestrates .-> gold
 ```
 
 ## Completed Implementation
